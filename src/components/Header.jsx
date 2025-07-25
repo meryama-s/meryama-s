@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState } from 'react';
 
 const Navbar = () => {
@@ -50,3 +51,14 @@ const Navbar = () => {
 };
 
 export default Navbar;
+=======
+const Header=() =>{
+    return (
+        <>
+        Header
+        </>
+    )
+}
+
+export default Header;
+>>>>>>> origin/sarah
