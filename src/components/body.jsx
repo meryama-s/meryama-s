@@ -1,59 +1,60 @@
-import React, { useState } from "react";
-
-const initialPosts = [
-  {
-    title: "Top 5 Electric Cars in 2025",
-    description:
-      "Explore the most innovative and efficient electric vehicles dominating the market this year.",
-    image:
-      "https://freerangestock.com/sample/149266/young-female-mechanic-on-a-creeper-under-a-car.jpg",
-  },
-  {
-    title: "Classic Cars That Never Die",
-    description:
-      "A look at timeless designs and engineering that still turn heads decades later.",
-    image:
-      "https://www.autotrainingcentre.com/wp-content/uploads/2024/07/auto-mechanic.jpg",
-  },
-  {
-    title: "How to Maintain Your Car Like a Pro",
-    description:
-      "Simple maintenance tips that can extend your vehicle's life and performance.",
-    image: "https://www.baker.edu/wp-content/uploads/female-mechanic.jpg",
-  },
-];
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 export default function Body() {
-  const [posts, setPosts] = useState(initialPosts);
+  const [posts, setPosts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editIndex, setEditIndex] = useState(null); // null means adding new
+  const [editPostId, setEditPostId] = useState(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
     image: "",
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch all posts on component mount
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/blogs/");
+        setPosts(response.data);
+        setIsLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setIsLoading(false);
+      }
+    };
+    fetchPosts();
+  }, []);
 
   const openAddModal = () => {
-    setEditIndex(null);
+    setEditPostId(null);
     setForm({ title: "", description: "", image: "" });
     setIsModalOpen(true);
   };
 
-  const openEditModal = (index) => {
-    setEditIndex(index);
+  const openEditModal = (postId) => {
+    const post = posts.find((p) => p._id === postId);
+    if (!post) return;
+
+    setEditPostId(postId);
     setForm({
-      title: posts[index].title,
-      description: posts[index].description,
-      image: posts[index].image,
+      title: post.title,
+      description: post.description,
+      image: post.image,
     });
     setIsModalOpen(true);
   };
 
-  const handleDelete = (index) => {
-    if (
-      window.confirm(`Are you sure you want to delete "${posts[index].title}"?`)
-    ) {
-      setPosts(posts.filter((_, i) => i !== index));
+  const handleDelete = async (postId) => {
+    if (window.confirm(`Are you sure you want to delete this post?`)) {
+      try {
+        await axios.delete(`http://localhost:5000/api/blogs/${postId}`);
+        setPosts(posts.filter((post) => post._id !== postId));
+      } catch (err) {
+        setError(err.message);
+      }
     }
   };
 
@@ -61,37 +62,74 @@ export default function Body() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editIndex !== null) {
-      // Edit existing post
-      const updatedPosts = [...posts];
-      updatedPosts[editIndex] = {
-        title: form.title,
-        description: form.description,
-        image: form.image,
-      };
-      setPosts(updatedPosts);
-    } else {
-      // Add new post
-      setPosts([...posts, form]);
+    try {
+      if (editPostId !== null) {
+        // Edit existing post
+        const response = await axios.put(
+          `http://localhost:5000/api/blogs/${editPostId}`,
+          form
+        );
+
+        setPosts((prevPosts) =>
+          prevPosts.map((post) =>
+            post._id === editPostId ? response.data : post
+          )
+        );
+      } else {
+        // Add new post
+        const response = await axios.post(
+          "http://localhost:5000/api/blogs/",
+          form
+        );
+        setPosts((prevPosts) => [...prevPosts, response.data]);
+      }
+
+      // Reset form and close modal
+      setIsModalOpen(false);
+      setForm({ title: "", description: "", image: "" });
+      setEditPostId(null); // Clear edit state
+    } catch (err) {
+      setError(err.message);
     }
-    setIsModalOpen(false);
-    setForm({ title: "", description: "", image: "" });
   };
+
+
+  if (isLoading) {
+    return (
+      <section className="bg-white py-16 px-6" id="latest-posts">
+        <div className="max-w-6xl mx-auto text-center">Loading...</div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="bg-white py-16 px-6" id="latest-posts">
+        <div className="max-w-6xl mx-auto text-center text-red-500">
+          Error: {error}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-white py-16 px-6" id="latest-posts">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-10">
-          <h2 className="text-3xl font-bold text-gray-800 text-center">
-            Latest Posts
-          </h2>
+        <div className="mb-10 flex justify-between items-center">
+          <h2 className="text-3xl font-bold text-gray-800">Latest Posts</h2>
+          <button
+            onClick={openAddModal}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Add New Post
+          </button>
         </div>
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post, index) => (
+          {posts.map((post) => (
             <div
-              key={index}
+              key={post._id}
               className="bg-gray-100 rounded-lg shadow hover:shadow-lg transition duration-300 overflow-hidden flex flex-col"
             >
               <img
@@ -106,14 +144,14 @@ export default function Body() {
                 <p className="text-gray-600 flex-grow">{post.description}</p>
                 <div className="mt-4 flex justify-end gap-3">
                   <button
-                    onClick={() => openEditModal(index)}
+                    onClick={() => openEditModal(post._id)}
                     className="text-blue-600 hover:text-blue-800 font-semibold text-sm px-3 py-1 border border-blue-600 rounded transition"
                     aria-label={`Edit ${post.title}`}
                   >
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(index)}
+                    onClick={() => handleDelete(post._id)}
                     className="text-red-600 hover:text-red-800 font-semibold text-sm px-3 py-1 border border-red-600 rounded transition"
                     aria-label={`Delete ${post.title}`}
                   >
@@ -131,7 +169,7 @@ export default function Body() {
         <div className="fixed inset-0 bg-black/30 flex justify-center items-center z-50">
           <div className="bg-white w-full max-w-md p-6 rounded">
             <h2 className="text-xl font-semibold mb-4 text-blue-600">
-              {editIndex !== null ? "Edit Blog" : "Add New Blog"}
+              {editPostId !== null ? "Edit Blog" : "Add New Blog"} {/* ✅ FIXED */}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
@@ -173,7 +211,7 @@ export default function Body() {
                   type="submit"
                   className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
                 >
-                  {editIndex !== null ? "Save Changes" : "Add Blog"}
+                  {editPostId !== null ? "Save Changes" : "Add Blog"}
                 </button>
               </div>
             </form>
