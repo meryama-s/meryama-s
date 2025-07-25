@@ -1,14 +1,3 @@
-<<<<<<< HEAD
-const Hero=() =>{
-    return (
-        <>
-        Hero
-        </>
-    )
-}
-
-export default Hero;
-=======
 import React, { useState } from "react";
 
 export default function Hero() {
@@ -110,4 +99,3 @@ export default function Hero() {
     </section>
   );
 }
->>>>>>> origin/sarah

@@ -1,14 +1,3 @@
-<<<<<<< HEAD
-const Body=() =>{
-    return (
-        <>
-        Body
-        </>
-    )
-}
-
-export default Body;
-=======
 import React, { useState } from "react";
 
 const initialPosts = [
@@ -194,4 +183,3 @@ export default function Body() {
     </section>
   );
 }
->>>>>>> origin/sarah
