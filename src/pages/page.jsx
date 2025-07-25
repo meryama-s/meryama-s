@@ -6,7 +6,7 @@ import Footer from '../components/footer';
 
 const Page=()=>{
     return (
-        <div className='flex-col'>
+        <div>
         <Header/>
         <Hero/>
         <Body/>
